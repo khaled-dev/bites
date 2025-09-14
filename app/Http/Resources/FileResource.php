@@ -11,14 +11,23 @@ class FileResource extends JsonResource
 
     public function toArray(Request $request): array
     {
-        $storageService = StorageFactoryService::make($this->storage);
-
-        return [
+        $data = [
             'filename'      => $this->filename,
-            'origin_url'    => $storageService->getOriginUrl($this->filename),
-            'download_url'  => route('files.download', ['file' => $this->id]),
-            'created_at'    => $this->created_at->toDateTimeString(),
-            'updated_at'    => $this->updated_at->toDateTimeString(),
+            'upload_status' => $this->status,
+        ];
+
+        if ($this->storage !== null) {
+            $storageService = StorageFactoryService::make($this->storage);
+
+            $data += [
+                'origin_url'    => $storageService->getOriginUrl($this->filename),
+                'download_url'  => route('files.download', ['file' => $this->id]),
+            ];
+        }
+
+        return $data + [
+            'created_at' => $this->created_at->toDateTimeString(),
+            'updated_at' => $this->updated_at->toDateTimeString(),
         ];
     }
 }
