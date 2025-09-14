@@ -30,7 +30,6 @@ RUN php artisan migrate --force
 RUN php artisan db:seed --force
 RUN php artisan optimize:clear
 RUN php artisan config:cache
-RUN php artisan route:cache
 
 EXPOSE 8080
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
