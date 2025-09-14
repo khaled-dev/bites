@@ -5,10 +5,14 @@
 set -e
 
 # Build assets using NPM
-npm run build
+#npm run build
 
 # Clear cache
 php artisan optimize:clear
+
+php artisan migrate
+
+php artisan db:seed --force
 
 # Cache the various components of the Laravel application
 php artisan config:cache
