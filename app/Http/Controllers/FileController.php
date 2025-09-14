@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Models\File;
 use App\Services\FileService;
+use App\Http\Resources\FileResource;
 use App\Http\Requests\StoreFileRequest;
-use App\Services\Storage\GCPStorageService;
+use App\Services\Storage\Concerns\StorageFactoryService;
 
 class FileController extends Controller
 {
@@ -24,18 +26,24 @@ class FileController extends Controller
 
     public function show(File $file)
     {
-        //TODO:
-        // remove service
-        // map service by storage-type
-        $storageService = new GCPStorageService();
-        $downloadUrl = $storageService->getDownloadUrl($file);
+        return new FileResource($file);
+    }
 
-        // use resource
-        return response()->json([
-            'filename' => $file->filename,
-            'created_at' => $file->created_at,
-            'updated_at' => $file->updated_at,
-            'download_url' => $downloadUrl,
+    public function download(File $file)
+    {
+        $filename = $file->filename;
+        $storageService = StorageFactoryService::make($file->storage);
+
+        try {
+            $uploadedFile = $storageService->getFile($filename);
+        } catch (Exception $exception) {
+            return response()->json(['message' => $exception->getMessage()], $exception->getCode());
+        }
+
+        return response()->streamDownload(function () use ($uploadedFile) {
+            echo $uploadedFile;
+        }, $filename, [
+            'Content-Disposition' => 'attachment; filename="' . basename($filename) . '"',
         ]);
     }
 }
