@@ -20,6 +20,10 @@ class UploadFileJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 3;
+
+    public $backoff = [10, 30, 60];
+
     public function __construct(
         private readonly File $file,
         private readonly string $tempPath,
@@ -28,8 +32,8 @@ class UploadFileJob implements ShouldQueue
     public function handle(): void
     {
         $storageServices = [
-            StorageEnum::R2,
-            StorageEnum::GCP,
+            StorageEnum::R2->value,
+            StorageEnum::GCP->value,
         ];
 
         $fileService = app(FileService::class);
@@ -37,6 +41,10 @@ class UploadFileJob implements ShouldQueue
         foreach ($storageServices as $storage) {
             try {
                 $storageService = StorageFactoryService::make($storage);
+                if (!Storage::disk('local')->exists($this->tempPath)) {
+                    throw new Exception("Temporary file not found: {$this->tempPath}");
+                }
+
                 $fileContents = Storage::disk('local')->get($this->tempPath);
                 $result = $storageService->upload($fileContents, $this->file->filename);
 
@@ -51,16 +59,22 @@ class UploadFileJob implements ShouldQueue
                 Storage::disk('local')->delete($this->tempPath);
                 return;
             } catch (Exception $e) {
-                Log::error("Upload failed for {$storage}: " . $e->getMessage());
+                Log::error("Upload failed for {$storage} (Attempt {$this->attempts()}): " . $e->getMessage());
+
+                // rollback temp files & update status to failed
+                if ($storage === end($storageServices) && $this->attempts() >= $this->tries) {
+
+                    Storage::disk('local')->delete($this->tempPath);
+
+                    $this->file->update([
+                        'status' => FileStatus::FAILED,
+                    ]);
+
+                    throw new Exception('All storage services failed to upload the file after ' . $this->attempts() . ' attempts');
+                }
             }
         }
 
-        Storage::disk('local')->delete($this->tempPath);
-
-        $this->file->update([
-            'status' => FileStatus::FAILED,
-        ]);
-
-        throw new Exception('All storage services failed to upload the file');
+        $this->release($this->backoff[$this->attempts() - 1] ?? 60);
     }
 }
