@@ -58,6 +58,7 @@ services:
        networks:
          - bitesnet
        volumes:
+         - .:/var/www
          - neon-db-data:/var/lib/postgresql/data
 
 networks:
