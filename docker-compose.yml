@@ -57,7 +57,13 @@ services:
          - "5432:5432"
        networks:
          - bitesnet
+       volumes:
+         - neon-db-data:/var/lib/postgresql/data
 
 networks:
     bitesnet:
         driver: bridge
+
+volumes:
+    neon-db-data:
+        driver: local
