@@ -26,10 +26,10 @@ RUN chown -R www-data:www-data /var/www \
 
 #RUN php artisan key:generate
 
-RUN php artisan migrate --force
-RUN php artisan db:seed --force
-RUN php artisan optimize:clear
-RUN php artisan config:cache
+#RUN php artisan migrate --force
+#RUN php artisan db:seed --force
+#RUN php artisan optimize:clear
+#RUN php artisan config:cache
 
 EXPOSE 8080
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+#CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
