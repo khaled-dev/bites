@@ -1,61 +1,170 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# File Storage Service
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based microservice for handling file uploads with multiple storage providers (R2 and GCP) and user management.
 
-## About Laravel
+## Setup & Installation
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Prerequisites
+- Docker and Docker Compose
+- Git
+- Composer (for local development)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Getting Started
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd bites
+```
 
-## Learning Laravel
+2. Copy the environment file:
+```bash
+cp .env.example .env
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+3. Start the Docker containers:
+```bash
+docker-compose up -d
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+4. Install dependencies and setup the project:
+```bash
+docker-compose exec bites_app composer install
+docker-compose exec bites_app php artisan key:generate
+docker-compose exec bites_app php artisan migrate
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+5. Seed the database with sample users:
+```bash
+docker-compose exec bites_app php artisan db:seed
+```
+This command will create sample users in the database that you can use for testing the API.
 
-## Laravel Sponsors
+## API Documentation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### File Management
 
-### Premium Partners
+#### Upload File
+- **POST** `/api/v1/files`
+- **Headers:**
+  - Content-Type: multipart/form-data
+- **Body:**
+  - file: (file) Required
+- **Response:** 201 Created
+```json
+{
+    "id": "1"
+}
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+#### Get File Details
+- **GET** `/api/v1/files/{id}`
+- **Response:** 200 OK
+```json
+{
+    "data": {
+        "filename": "example.txt",
+        "upload_status": "uploaded",
+        "origin_url": "https://storage.url/example.txt",
+        "download_url": "http://api.url/files/1/download",
+        "created_at": "2025-09-14 00:00:00",
+        "updated_at": "2025-09-14 00:00:00"
+    }
+}
+```
 
-## Contributing
+### User Management
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+#### List/Search Users
+- **GET** `/api/v1/users`
+- **Query Parameters:**
+  - name: (string) Optional - Filter by name
+  - dob: (date) Optional - Filter by date of birth (format: YYYY-MM-DD)
+- **Response:** 200 OK
+```json
+{
+    "status": 200,
+    "message": "Users retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "dob": "1990-01-01",
+            "dob_formated": "01 Jan, 1990"
+        }
+    ]
+}
+```
 
-## Code of Conduct
+## Architecture
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Storage Providers
+The service supports multiple storage providers:
+- R2 (Cloudflare)
+- GCP (Google Cloud Platform)
 
-## Security Vulnerabilities
+If one provider fails, the system automatically tries the next available provider.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Queue System
+File uploads are processed asynchronously with:
+- Retry mechanism (3 attempts)
+- Exponential backoff (10s, 30s, 60s)
+- Queue monitoring
 
-## License
+## Testing
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Running Tests
+
+Run all tests:
+```bash
+docker-compose exec bites_app php artisan test
+```
+
+Run specific test suite:
+```bash
+docker-compose exec bites_app php artisan test tests/Feature/FileTest.php
+docker-compose exec bites_app php artisan test tests/Feature/UserTest.php
+docker-compose exec bites_app php artisan test tests/Unit/Services/Storage/StorageFactoryServiceTest.php
+```
+
+### Test Coverage
+- Feature Tests:
+  - File upload and management
+  - User listing and filtering
+- Unit Tests:
+  - Storage Factory Service
+  - Storage Provider implementations
+
+## Environment Variables
+
+Key environment variables:
+```
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=your_database
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+R2_ACCESS_KEY=your_r2_key
+R2_SECRET_KEY=your_r2_secret
+R2_BUCKET=your_bucket
+R2_ENDPOINT=your_endpoint
+
+GCP_PROJECT_ID=your_project_id
+GCP_STORAGE_BUCKET=your_bucket
+```
+
+## Monitoring and Maintenance
+
+### Queue Worker
+Start the queue worker:
+```bash
+docker-compose exec bites_app php artisan queue:work
+```
+
+### Logs
+Access logs:
+```bash
+docker-compose exec bites_app tail -f storage/logs/laravel.log
+```
