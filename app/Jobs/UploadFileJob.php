@@ -25,8 +25,8 @@ class UploadFileJob implements ShouldQueue
     public $backoff = [10, 30, 60];
 
     public function __construct(
-        private readonly File $file,
-        private readonly string $tempPath,
+        public readonly File $file,
+        public readonly string $tempPath,
     ) {}
 
     public function handle(): void
