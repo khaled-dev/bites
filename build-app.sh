@@ -7,7 +7,7 @@ set -e
 # Build assets using NPM
 #npm run build
 
-composer install
+#composer install
 
 php artisan key:generate
 
