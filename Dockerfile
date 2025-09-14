@@ -17,7 +17,7 @@ WORKDIR /var/www
 
 COPY . .
 
-RUN chmod +x build-app.sh
+RUN #chmod +x build-app.sh
 
 RUN composer install --no-interaction --optimize-autoloader --no-scripts
 
