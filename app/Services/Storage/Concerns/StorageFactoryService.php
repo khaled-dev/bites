@@ -8,7 +8,7 @@ use App\Services\Storage\R2StorageService;
 
 class StorageFactoryService
 {
-    public static function make($storage): GCPStorageService|R2StorageService
+    public static function make(string $storage): GCPStorageService|R2StorageService
     {
         return match ($storage) {
             Storage::GCP->value => new GCPStorageService(),

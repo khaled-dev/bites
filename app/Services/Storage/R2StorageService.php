@@ -11,9 +11,9 @@ class R2StorageService extends StorageContract
 {
     protected $disk = StorageType::R2;
 
-    public function upload(UploadedFile $file, $filename): array
+    public function upload(string $file, string $filename): array
     {
-        $path = Storage::disk(StorageType::R2)->putFileAs('', $file, $filename);
+        $path = Storage::disk($this->disk)->put($filename, $file);
 
         if ($path === false) {
             throw new \Exception("R2 upload failed");
@@ -26,3 +26,4 @@ class R2StorageService extends StorageContract
         ];
     }
 }
+

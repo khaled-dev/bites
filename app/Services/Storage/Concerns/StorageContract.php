@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 abstract class StorageContract
 {
-    abstract public function upload(UploadedFile $file, $filename);
+    abstract public function upload(string $file, string $filename);
 
     public function getOriginUrl(string $filename): string
     {
