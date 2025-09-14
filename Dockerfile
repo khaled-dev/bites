@@ -24,7 +24,7 @@ RUN composer install --no-interaction --optimize-autoloader --no-scripts
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage
 
-RUN php artisan key:generate
+#RUN php artisan key:generate
 
 RUN php artisan migrate --force
 RUN php artisan db:seed --force
