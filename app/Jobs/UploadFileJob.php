@@ -24,6 +24,11 @@ class UploadFileJob implements ShouldQueue
 
     public $backoff = [10, 30, 60];
 
+    public array $storageServices = [
+        StorageEnum::R2->value,
+        StorageEnum::GCP->value,
+    ];
+
     public function __construct(
         public readonly File $file,
         public readonly string $tempPath,
@@ -31,14 +36,9 @@ class UploadFileJob implements ShouldQueue
 
     public function handle(): void
     {
-        $storageServices = [
-            StorageEnum::R2->value,
-            StorageEnum::GCP->value,
-        ];
-
         $fileService = app(FileService::class);
 
-        foreach ($storageServices as $storage) {
+        foreach ($this->storageServices as $storage) {
             try {
                 $storageService = StorageFactoryService::make($storage);
                 if (!Storage::disk('local')->exists($this->tempPath)) {
@@ -62,7 +62,7 @@ class UploadFileJob implements ShouldQueue
                 Log::error("Upload failed for {$storage} (Attempt {$this->attempts()}): " . $e->getMessage());
 
                 // rollback temp files & update status to failed
-                if ($storage === end($storageServices) && $this->attempts() >= $this->tries) {
+                if ($storage === end($this->storageServices) && $this->attempts() >= $this->tries) {
 
                     Storage::disk('local')->delete($this->tempPath);
 
