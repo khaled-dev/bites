@@ -26,8 +26,8 @@ RUN chown -R www-data:www-data /var/www \
 
 #RUN php artisan key:generate
 
-RUN php artisan migrate --force
-RUN php artisan db:seed --force
+RUN php artisan migrate
+RUN php artisan db:seed
 RUN php artisan optimize:clear
 RUN php artisan config:cache
 
