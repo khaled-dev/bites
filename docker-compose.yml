@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: bites_app
+        restart: unless-stopped
+        volumes:
+            - .:/var/www
+        environment:
+            DB_CONNECTION: pgsql
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT:-5432}
+            DB_DATABASE: ${DB_DATABASE}
+            DB_USERNAME: ${DB_USERNAME}
+            DB_PASSWORD: ${DB_PASSWORD}
+            DB_SSLMODE: ${DB_SSLMODE:-require}
+
+            RABBITMQ_CONNECTION: ${RABBITMQ_CONNECTION}
+
+            GCS_ENDPOINT: ${GCS_ENDPOINT}
+            GCS_ACCESS_KEY: ${GCS_ACCESS_KEY}
+            GCS_SECRET_KEY: ${GCS_SECRET_KEY}
+            GCS_BUCKET: ${GCS_BUCKET}
+
+            R2_ENDPOINT: ${R2_ENDPOINT}
+            R2_ACCESS_KEY: ${R2_ACCESS_KEY}
+            R2_SECRET_KEY: ${R2_SECRET_KEY}
+            R2_BUCKET: ${R2_BUCKET}
+        ports:
+            - "9000:9000"
+        # depends_on:
+        # - rabbitmq
+        # - postgres
+        networks:
+            - bitesnet
+
+    # rabbitmq:
+    #   image: rabbitmq:3-management
+    #   ports:
+    #     - "5672:5672"
+    #     - "15672:15672"
+    #   networks:
+    #     - bitesnet
+
+    # postgres:
+    #   image: postgres:15
+    #   environment:
+    #     POSTGRES_DB: ${DB_DATABASE}
+    #     POSTGRES_USER: ${DB_USERNAME}
+    #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+    #   ports:
+    #     - "5432:5432"
+    #   networks:
+    #     - bitesnet
+
+networks:
+    bitesnet:
+        driver: bridge
