@@ -7,6 +7,7 @@ services:
             dockerfile: Dockerfile
         container_name: bites_app
         restart: unless-stopped
+        user: "1000:1000"
         volumes:
             - .:/var/www
         environment:
@@ -37,24 +38,25 @@ services:
         networks:
             - bitesnet
 
-    # rabbitmq:
-    #   image: rabbitmq:3-management
-    #   ports:
-    #     - "5672:5672"
-    #     - "15672:15672"
-    #   networks:
-    #     - bitesnet
+#    rabbitmq:
+#       image: rabbitmq:3-management
+#       ports:
+#         - "5672:5672"
+#         - "15672:15672"
+#       networks:
+#         - bitesnet
 
-    # postgres:
-    #   image: postgres:15
-    #   environment:
-    #     POSTGRES_DB: ${DB_DATABASE}
-    #     POSTGRES_USER: ${DB_USERNAME}
-    #     POSTGRES_PASSWORD: ${DB_PASSWORD}
-    #   ports:
-    #     - "5432:5432"
-    #   networks:
-    #     - bitesnet
+    postgres:
+       image: postgres:15
+       container_name: bites_app_postgres
+       environment:
+         POSTGRES_DB: ${DB_DATABASE}
+         POSTGRES_USER: ${DB_USERNAME}
+         POSTGRES_PASSWORD: ${DB_PASSWORD}
+       ports:
+         - "5432:5432"
+       networks:
+         - bitesnet
 
 networks:
     bitesnet:
