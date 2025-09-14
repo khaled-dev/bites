@@ -13,8 +13,4 @@ class File extends Model
 
     protected $fillable = ['filename', 'storage', 'status'];
 
-    protected $casts = [
-        'storage' => StorageEnum::class,
-        'status' => FileStatus::class,
-    ];
 }
