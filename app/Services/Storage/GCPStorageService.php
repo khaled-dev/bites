@@ -6,12 +6,13 @@ use App\Models\File;
 use App\Services\Storage\Concerns\StorageContract;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use App\Enums\Storage as StorageType;
 
 class GCPStorageService extends StorageContract
 {
     public function upload(UploadedFile $file, $filename): array
     {
-        $path = Storage::disk('gcp')->putFileAs('', $file, $filename);
+        $path = Storage::disk(StorageType::GCP)->putFileAs('', $file, $filename);
 
         if ($path === false) {
             throw new \Exception("GCP upload failed");
@@ -19,7 +20,7 @@ class GCPStorageService extends StorageContract
 
         return [
             'success' => true,
-            'storage' => 'gcp',
+            'storage' => StorageType::GCP,
             'path' => $path,
         ];
     }

@@ -12,8 +12,6 @@ abstract class StorageContract
 
     public function getDownloadUrl(File $file): string
     {
-        $disk = $file->storage;
-
-        return Storage::disk($disk)->url($file->path);
+        return Storage::disk($file->storage)->url($file->filename);
     }
 }
