@@ -10,6 +10,8 @@ use App\Enums\Storage as StorageType;
 
 class GCPStorageService extends StorageContract
 {
+    protected $disk = StorageType::GCP;
+
     public function upload(UploadedFile $file, $filename): array
     {
         $path = Storage::disk(StorageType::GCP)->putFileAs('', $file, $filename);

@@ -9,6 +9,8 @@ use App\Services\Storage\Concerns\StorageContract;
 
 class R2StorageService extends StorageContract
 {
+    protected $disk = StorageType::R2;
+
     public function upload(UploadedFile $file, $filename): array
     {
         $path = Storage::disk(StorageType::R2)->putFileAs('', $file, $filename);
