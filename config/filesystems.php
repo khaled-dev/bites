@@ -60,6 +60,25 @@ return [
             'report' => false,
         ],
 
+        'gcp' => [
+            'driver' => 's3',
+            'key' => env('GCP_KEY'),
+            'secret' => env('GCP_SECRET'),
+            'region' => 'auto',
+            'bucket' => env('GCP_BUCKET'),
+            'endpoint' => env('GCP_ENDPOINT', 'https://storage.googleapis.com'),
+            'use_path_style_endpoint' => false,
+        ],
+
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_KEY'),
+            'secret' => env('R2_SECRET'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT', 'https://406ecf7cd6d082274cc9c25a83832e3a.r2.cloudflarestorage.com'),
+            'use_path_style_endpoint' => true,
+        ],
     ],
 
     /*
