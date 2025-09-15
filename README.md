@@ -4,11 +4,6 @@ A Laravel-based microservice for handling file uploads with multiple storage pro
 
 ## Setup & Installation
 
-### Prerequisites
-- Docker and Docker Compose
-- Git
-- Composer (for local development)
-
 ### Getting Started
 
 1. Clone the repository:
@@ -39,6 +34,35 @@ docker-compose exec bites_app php artisan migrate
 docker-compose exec bites_app php artisan db:seed
 ```
 This command will create sample users in the database that you can use for testing the API.
+
+---
+
+## Architecture
+
+### File status
+- when uploading the file, the uploading-process will be queued `UploadFileJob`,
+  the file will be stored in a pending status,
+  and the user will get an immediate response with the file's local id
+
+- a job will be running to process the uploading,
+  after three trials, it will set the file's status to ether fail or success
+
+- the `origin_url` and `download_url` will be generated after the file is successfully uploaded
+
+### Storage Providers
+The service supports multiple storage providers:
+- R2 (Cloudflare)
+- GCP (Google Cloud Platform)
+
+If one provider fails, the system automatically tries the next available provider.
+
+### Queue System
+File uploads are processed asynchronously with:
+- Retry mechanism (3 attempts)
+- Exponential backoff (10s, 30s, 60s)
+- Queue monitoring
+
+---
 
 ## API Documentation
 
@@ -95,21 +119,7 @@ This command will create sample users in the database that you can use for testi
     ]
 }
 ```
-
-## Architecture
-
-### Storage Providers
-The service supports multiple storage providers:
-- R2 (Cloudflare)
-- GCP (Google Cloud Platform)
-
-If one provider fails, the system automatically tries the next available provider.
-
-### Queue System
-File uploads are processed asynchronously with:
-- Retry mechanism (3 attempts)
-- Exponential backoff (10s, 30s, 60s)
-- Queue monitoring
+---
 
 ## Testing
 
