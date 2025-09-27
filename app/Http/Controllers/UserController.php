@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UserResourceCollection;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use App\Http\Resources\UserResource;
@@ -13,19 +14,14 @@ class UserController extends Controller
     {
     }
 
-    public function index(IndexUserRequest $request): JsonResponse
+    public function index(IndexUserRequest $request): UserResourceCollection
     {
-        $userResourceCollection = UserResource::collection(
-            $this->userService->searchBy(
-                $request->input('name'),
-                $request->input('dob'),
-            )
+        $searchResult = $this->userService->searchBy(
+            $request->input('name'),
+            $request->input('dob'),
+            $request->input('per_page', 10),
         );
 
-        return response()->json([
-            'status' => 200,
-            'message' => 'Users retrieved successfully',
-            'data' => $userResourceCollection,
-        ]);
+        return (new UserResourceCollection($searchResult));
     }
 }
