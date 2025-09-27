@@ -24,7 +24,4 @@ class UserService
 
         return $userQuery->get();
     }
-
-
-
 }

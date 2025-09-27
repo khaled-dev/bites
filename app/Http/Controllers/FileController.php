@@ -32,10 +32,9 @@ class FileController extends Controller
     public function download(File $file)
     {
         $filename = $file->filename;
-        $storageService = StorageFactoryService::make($file->storage);
 
         try {
-            $uploadedFile = $storageService->getFile($filename);
+            $uploadedFile = StorageFactoryService::make($file->storage)->getFile($filename);
         } catch (Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], $exception->getCode());
         }
