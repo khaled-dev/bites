@@ -104,6 +104,7 @@ File uploads are processed asynchronously with:
 - **Query Parameters:**
   - name: (string) Optional - Filter by name
   - dob: (date) Optional - Filter by date of birth (format: YYYY-MM-DD)
+  - per_page: (integer) Optional - Items per page (default: 15)
 - **Response:** 200 OK
 ```json
 {
@@ -116,7 +117,16 @@ File uploads are processed asynchronously with:
             "dob": "1990-01-01",
             "dob_formated": "01 Jan, 1990"
         }
-    ]
+    ],
+    "links": {
+        "next_page_url": "http://api.url/users?page=2",
+        "prev_page_url": null
+    },
+    "meta": {
+        "current_page": 1,
+        "per_page": 15,
+        "has_more_pages": true
+    }
 }
 ```
 ---
