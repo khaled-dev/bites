@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use App\Enums\Storage as StorageEnum;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class FileTest extends TestCase
@@ -22,6 +23,7 @@ class FileTest extends TestCase
         Storage::fake('local');
         Storage::fake(StorageEnum::R2->value);
         Storage::fake(StorageEnum::GCP->value);
+        Redis::flushall();
     }
 
     public function test_can_upload_file(): void
@@ -44,9 +46,12 @@ class FileTest extends TestCase
         $this->assertEquals(FileStatus::PENDING->value, $fileRecord->status);
 
         Queue::assertPushed(UploadFileJob::class, function ($job) use ($fileRecord) {
-            return $job->file->id === $fileRecord->id
-                && Storage::disk('local')->exists($job->tempPath);
+            return $job->file->id === $fileRecord->id;
         });
+
+        // Assert file content is stored in Redis
+        $redisKey = 'temp_file:' . $fileRecord->id;
+        $this->assertTrue(Redis::exists($redisKey) > 0);
     }
 
     public function test_cannot_upload_invalid_file(): void
@@ -94,7 +99,6 @@ class FileTest extends TestCase
 
     public function test_job_properly_handles_file_upload(): void
     {
-        Storage::fake('local');
         Storage::fake(StorageEnum::R2->value);
 
         $file = File::factory()->create([
@@ -102,11 +106,17 @@ class FileTest extends TestCase
             'status' => FileStatus::PENDING
         ]);
 
-        $tempFile = UploadedFile::fake()->create('test.txt', 100);
-        $tempPath = 'temp/' . $file->filename;
-        Storage::disk('local')->putFileAs('temp', $tempFile, $file->filename);
+        $redisKey = 'temp_file:' . $file->id;
 
-        $job = new UploadFileJob($file, $tempPath);
+        // Store file content in Redis with the expected format
+        $fileData = json_encode([
+            'content' => base64_encode('test file content'),
+            'mime_type' => 'text/plain',
+            'original_name' => 'test.txt'
+        ]);
+        Redis::setex($redisKey, 3600, $fileData);
+
+        $job = new UploadFileJob($file, $redisKey);
         $job->handle();
 
         $file->refresh();
@@ -114,7 +124,8 @@ class FileTest extends TestCase
         $this->assertEquals(FileStatus::UPLOADED->value, $file->status);
         $this->assertEquals(StorageEnum::R2->value, $file->storage);
 
-        Storage::disk('local')->assertMissing($tempPath);
+        // Assert file content is removed from Redis
+        $this->assertFalse(Redis::exists($redisKey) > 0);
     }
 
     public function test_job_marks_file_as_failed_when_storage_fails(): void
@@ -124,11 +135,17 @@ class FileTest extends TestCase
             'status' => FileStatus::PENDING->value
         ]);
 
-        $tempFile = UploadedFile::fake()->create('test.txt', 100);
-        $tempPath = 'temp/' . $file->filename;
-        Storage::disk('local')->putFileAs('temp', $tempFile, $file->filename);
+        $redisKey = 'temp_file:' . $file->id;
 
-        $job = new UploadFileJob($file, $tempPath);
+        // Store file content in Redis with the expected format
+        $fileData = json_encode([
+            'content' => base64_encode('test file content'),
+            'mime_type' => 'text/plain',
+            'original_name' => 'test.txt'
+        ]);
+        Redis::setex($redisKey, 3600, $fileData);
+
+        $job = new UploadFileJob($file, $redisKey);
         $job->tries = 1;
         $job->storageServices = [
             'no_storage',
@@ -144,6 +161,7 @@ class FileTest extends TestCase
         $this->assertEquals(FileStatus::FAILED->value, $file->status);
         $this->assertNull($file->storage);
 
-        Storage::disk('local')->assertMissing($tempPath);
+        // Assert file content is removed from Redis even on failure
+        $this->assertFalse(Redis::exists($redisKey) > 0);
     }
 }
