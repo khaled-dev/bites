@@ -7,7 +7,6 @@ use App\Enums\FileStatus;
 use App\Jobs\UploadFileJob;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Storage;
 use App\Services\Messaging\RabbitMqService;
 
 readonly class FileService
@@ -20,17 +19,7 @@ readonly class FileService
     public function upload(UploadedFile $uploadedFile): File
     {
         $fileRecord = $this->store($uploadedFile->getClientOriginalName());
-
-        $redisKey = "temp_file:{$fileRecord->id}";
-        $fileContent = base64_encode(
-            file_get_contents($uploadedFile->getRealPath())
-        );
-
-        Redis::setex($redisKey, 3600, json_encode([
-            'content' => $fileContent,
-            'mime_type' => $uploadedFile->getClientMimeType(),
-            'original_name' => $uploadedFile->getClientOriginalName(),
-        ]));
+        $redisKey   = $this->storeTempFile($fileRecord, $uploadedFile);
 
         UploadFileJob::dispatch($fileRecord, $redisKey);
 
@@ -54,5 +43,21 @@ readonly class FileService
             'filename' => $file->filename,
             'storage' => $file->storage,
         ]);
+    }
+
+    private function storeTempFile(File $fileRecord, UploadedFile $uploadedFile): string
+    {
+        $redisKey = "temp_file:{$fileRecord->id}";
+        $fileContent = base64_encode(
+            file_get_contents($uploadedFile->getRealPath())
+        );
+
+        Redis::setex($redisKey, 3600, json_encode([
+            'content' => $fileContent,
+            'mime_type' => $uploadedFile->getClientMimeType(),
+            'original_name' => $uploadedFile->getClientOriginalName(),
+        ]));
+
+        return $redisKey;
     }
 }
