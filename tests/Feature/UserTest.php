@@ -47,8 +47,8 @@ class UserTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.name', $johnDoe->name)
-            ->assertJsonPath('data.1.name', $janeDoe->name);
+            ->assertJsonPath('data.0.name', $janeDoe->name)
+            ->assertJsonPath('data.1.name', $johnDoe->name);
 
         // Assert that Bob Smith is not in the response
         $responseData = $response->json('data');
