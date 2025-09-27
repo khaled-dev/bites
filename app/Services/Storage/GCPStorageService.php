@@ -11,9 +11,9 @@ class GCPStorageService extends StorageContract
 {
     protected $disk = StorageType::GCP->value;
 
-    public function upload(string $file, string $filename): array
+    public function upload(string $content, string $filename): array
     {
-        $path = Storage::disk($this->disk)->put($filename, $file);
+        $path = Storage::disk($this->disk)->put($filename, $content);
 
         if ($path === false) {
             throw new Exception("GCP upload failed");
