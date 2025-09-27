@@ -3,14 +3,15 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\Paginator;
 
 class UserService
 {
     public function searchBy(
         ?string $name = null,
         ?string $dob = null,
-    ): Collection
+        int $perPage = 10,
+    ): Paginator
     {
         $userQuery = User::query();
 
@@ -22,6 +23,8 @@ class UserService
             $userQuery->whereDob($dob);
         }
 
-        return $userQuery->get();
+        return $userQuery
+            ->orderByDesc('id')
+            ->simplePaginate($perPage);
     }
 }
