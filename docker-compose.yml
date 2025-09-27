@@ -61,6 +61,17 @@ services:
          - .:/var/www
          - neon-db-data:/var/lib/postgresql/data
 
+    redis:
+        image: redis:7-alpine
+        container_name: bites_app_redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        networks:
+            - bitesnet
+        volumes:
+            - redis-data:/data
+
 networks:
     bitesnet:
         driver: bridge
@@ -68,3 +79,6 @@ networks:
 volumes:
     neon-db-data:
         driver: local
+    redis-data:
+        driver: local
+
