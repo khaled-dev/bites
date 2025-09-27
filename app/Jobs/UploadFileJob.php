@@ -10,6 +10,7 @@ use App\Services\FileService;
 use Illuminate\Support\Facades\Log;
 use App\Enums\Storage as StorageEnum;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,7 +22,6 @@ class UploadFileJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
-
     public $backoff = [10, 30, 60];
 
     public array $storageServices = [
@@ -31,7 +31,7 @@ class UploadFileJob implements ShouldQueue
 
     public function __construct(
         public readonly File $file,
-        public readonly string $tempPath,
+        public readonly string $redisKey,
     ) {}
 
     public function handle(): void
@@ -40,31 +40,32 @@ class UploadFileJob implements ShouldQueue
 
         foreach ($this->storageServices as $storage) {
             try {
-                $storageService = StorageFactoryService::make($storage);
-                if (!Storage::disk('local')->exists($this->tempPath)) {
-                    throw new Exception("Temporary file not found: {$this->tempPath}");
+                $fileData = json_decode(Redis::get($this->redisKey), true);
+
+                if (!$fileData) {
+                    throw new Exception("Temporary file not found: {$this->redisKey}");
                 }
 
-                $fileContents = Storage::disk('local')->get($this->tempPath);
-                $result = $storageService->upload($fileContents, $this->file->filename);
+                $content = base64_decode($fileData['content']);
+                $storageService = StorageFactoryService::make($storage);
+
+                $result = $storageService->upload($content, $fileData['original_name']);
 
                 $this->file->update([
                     'storage' => $storage,
                     'status' => FileStatus::UPLOADED,
-                    'path' => $result['path'] ?? $this->file->filename,
+                    'path' => $result['path'],
                 ]);
 
                 $fileService->publish($this->file->fresh());
-
-                Storage::disk('local')->delete($this->tempPath);
+                Redis::del($this->redisKey);
                 return;
+
             } catch (Exception $e) {
                 Log::error("Upload failed for {$storage} (Attempt {$this->attempts()}): " . $e->getMessage());
 
-                // rollback temp files & update status to failed
                 if ($storage === end($this->storageServices) && $this->attempts() >= $this->tries) {
-
-                    Storage::disk('local')->delete($this->tempPath);
+                    Redis::del($this->redisKey);
 
                     $this->file->update([
                         'status' => FileStatus::FAILED,
